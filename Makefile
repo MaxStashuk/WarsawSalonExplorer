@@ -1,10 +1,12 @@
 .PHONY: dev scrape backend frontend test
+include .env
+export
 
 scrape:
-	./gradlew :scraper:run
+	gradlew.bat :scraper:run
 
 backend:
-	./gradlew :backend:run
+	gradlew.bat :backend:run
 
 frontend:
 	cd frontend && npm run dev
