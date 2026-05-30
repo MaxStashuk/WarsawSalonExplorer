@@ -1,4 +1,4 @@
-.PHONY: dev scrape backend frontend test
+.PHONY: dev scrape backend frontend test-backend
 include .env
 export
 
@@ -15,4 +15,5 @@ frontend:
 	cd frontend && npm run dev
 
 dev:
-	make backend & make frontend
+	cmd /c start "Warsaw Salons — Backend" gradlew.bat :backend:run
+	cd frontend && npm run dev
