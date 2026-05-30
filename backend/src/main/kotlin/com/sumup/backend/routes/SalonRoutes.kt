@@ -24,9 +24,11 @@ fun Application.configureSalonRoutes() {
 
             get("/salons") {
                 val district = call.request.queryParameters["district"]
-                val q = call.request.queryParameters["q"]
-                val sort = call.request.queryParameters["sort"]
-                call.respond(SalonService.getSalons(district, q, sort))
+                val q        = call.request.queryParameters["q"]
+                val sort     = call.request.queryParameters["sort"]
+                val page     = call.request.queryParameters["page"]?.toIntOrNull()?.coerceAtLeast(1) ?: 1
+                val pageSize = call.request.queryParameters["pageSize"]?.toIntOrNull()?.coerceIn(1, 100) ?: 20
+                call.respond(SalonService.getSalons(district, q, sort, page, pageSize))
             }
 
             get("/salons/{id}") {

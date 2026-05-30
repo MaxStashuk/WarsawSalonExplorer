@@ -3,17 +3,29 @@ import Link from 'next/link';
 import { Star, MapPin } from 'lucide-react';
 import { getSalons, getDistricts, type SalonSummary } from '@/lib/api';
 import { SearchFilters } from '@/components/SearchFilters';
+import { Pagination } from '@/components/Pagination';
 
 interface PageProps {
-  searchParams: { district?: string; q?: string; sort?: string };
+  searchParams: {
+    district?: string;
+    q?: string;
+    sort?: string;
+    page?: string;
+    pageSize?: string;
+  };
 }
 
 export default async function Page({ searchParams }: PageProps) {
-  const [{ items, total }, districts] = await Promise.all([
+  const page     = Math.max(1, parseInt(searchParams.page ?? '1') || 1);
+  const pageSize = Math.min(100, Math.max(1, parseInt(searchParams.pageSize ?? '20') || 20));
+
+  const [{ items, total, totalPages }, districts] = await Promise.all([
     getSalons({
       district: searchParams.district,
-      q: searchParams.q,
-      sort: searchParams.sort,
+      q:        searchParams.q,
+      sort:     searchParams.sort,
+      page,
+      pageSize,
     }),
     getDistricts(),
   ]);
@@ -32,7 +44,7 @@ export default async function Page({ searchParams }: PageProps) {
       </div>
 
       <p className="text-sm text-gray-500 mb-4">
-        Showing {items.length} of {total} salons
+        Showing {items.length === 0 ? 0 : (page - 1) * pageSize + 1}–{(page - 1) * pageSize + items.length} of {total} salons
       </p>
 
       {items.length === 0 ? (
@@ -49,6 +61,10 @@ export default async function Page({ searchParams }: PageProps) {
           ))}
         </div>
       )}
+
+      <Suspense>
+        <Pagination page={page} totalPages={totalPages} />
+      </Suspense>
     </main>
   );
 }

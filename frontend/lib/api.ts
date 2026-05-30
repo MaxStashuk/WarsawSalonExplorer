@@ -27,6 +27,9 @@ export interface Salon {
 export interface SalonListResponse {
   items: SalonSummary[];
   total: number;
+  page: number;
+  pageSize: number;
+  totalPages: number;
 }
 
 export type SalonPatch = {
@@ -43,11 +46,15 @@ export async function getSalons(params: {
   district?: string;
   q?: string;
   sort?: string;
+  page?: number;
+  pageSize?: number;
 } = {}): Promise<SalonListResponse> {
   const url = new URL('/api/salons', BASE);
   if (params.district) url.searchParams.set('district', params.district);
   if (params.q) url.searchParams.set('q', params.q);
   if (params.sort) url.searchParams.set('sort', params.sort);
+  if (params.page) url.searchParams.set('page', String(params.page));
+  if (params.pageSize) url.searchParams.set('pageSize', String(params.pageSize));
   const res = await fetch(url.toString(), { cache: 'no-store' });
   if (!res.ok) throw new Error('Failed to fetch salons');
   return res.json();

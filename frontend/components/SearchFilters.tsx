@@ -17,6 +17,7 @@ export function SearchFilters({ districts }: { districts: string[] }) {
     const next = new URLSearchParams(params.toString());
     if (value) next.set(key, value);
     else next.delete(key);
+    next.delete('page'); // reset to page 1 whenever a filter changes
     router.push(`/?${next.toString()}`);
   };
 
@@ -26,7 +27,8 @@ export function SearchFilters({ districts }: { districts: string[] }) {
     debounce.current = setTimeout(() => push('q', value), 350);
   };
 
-  const hasFilters = params.get('q') || params.get('district') || params.get('sort');
+  const hasFilters =
+    params.get('q') || params.get('district') || params.get('sort');
 
   return (
     <div className="flex gap-3 flex-wrap items-center">
@@ -60,6 +62,17 @@ export function SearchFilters({ districts }: { districts: string[] }) {
         <option value="">Highest rated</option>
         <option value="reviews">Most reviewed</option>
         <option value="name">Name (A–Z)</option>
+      </select>
+
+      <select
+        value={params.get('pageSize') ?? '20'}
+        onChange={(e) => push('pageSize', e.target.value)}
+        className={INPUT_CLS}
+        aria-label="Salons per page"
+      >
+        <option value="10">10 per page</option>
+        <option value="20">20 per page</option>
+        <option value="50">50 per page</option>
       </select>
 
       {hasFilters && (

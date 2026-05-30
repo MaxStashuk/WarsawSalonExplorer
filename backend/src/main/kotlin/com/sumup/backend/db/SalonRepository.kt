@@ -10,19 +10,30 @@ import org.jetbrains.exposed.sql.transactions.transaction
 
 object SalonRepository {
 
-    fun getSalons(district: String?, q: String?, sort: String?): List<SalonSummary> = transaction {
-        val query = Salons.selectAll()
-
-        if (!district.isNullOrBlank()) query.andWhere { Salons.district eq district }
-        if (!q.isNullOrBlank()) query.andWhere { Salons.name like "%$q%" }
-
-        when (sort) {
-            "name"    -> query.orderBy(Salons.name to SortOrder.ASC)
-            "reviews" -> query.orderBy(Salons.reviewsCount to SortOrder.DESC_NULLS_LAST)
-            else      -> query.orderBy(Salons.rating to SortOrder.DESC_NULLS_LAST)
+    fun getSalons(
+        district: String?,
+        q: String?,
+        sort: String?,
+        page: Int,
+        pageSize: Int,
+    ): Pair<List<SalonSummary>, Int> = transaction {
+        fun base() = Salons.selectAll().apply {
+            if (!district.isNullOrBlank()) andWhere { Salons.district eq district }
+            if (!q.isNullOrBlank()) andWhere { Salons.name like "%$q%" }
         }
 
-        query.map { it.toSalonSummary() }
+        val total = base().count().toInt()
+
+        val items = base().apply {
+            when (sort) {
+                "name"    -> orderBy(Salons.name to SortOrder.ASC)
+                "reviews" -> orderBy(Salons.reviewsCount to SortOrder.DESC_NULLS_LAST)
+                else      -> orderBy(Salons.rating to SortOrder.DESC_NULLS_LAST)
+            }
+            limit(pageSize, offset = ((page - 1).toLong() * pageSize))
+        }.map { it.toSalonSummary() }
+
+        Pair(items, total)
     }
 
     fun getSalonById(id: Int): SalonDetail? = transaction {

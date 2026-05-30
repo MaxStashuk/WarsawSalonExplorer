@@ -33,7 +33,10 @@ data class SalonDetail(
 @Serializable
 data class SalonListResponse(
     val items: List<SalonSummary>,
-    val total: Int
+    val total: Int,
+    val page: Int,
+    val pageSize: Int,
+    val totalPages: Int
 )
 
 @Serializable

@@ -12,9 +12,22 @@ sealed class PatchResult {
 }
 
 object SalonService {
-    fun getSalons(district: String?, q: String?, sort: String?): SalonListResponse {
-        val items = SalonRepository.getSalons(district, q, sort)
-        return SalonListResponse(items = items, total = items.size)
+    fun getSalons(
+        district: String?,
+        q: String?,
+        sort: String?,
+        page: Int = 1,
+        pageSize: Int = 20,
+    ): SalonListResponse {
+        val (items, total) = SalonRepository.getSalons(district, q, sort, page, pageSize)
+        val totalPages = if (total == 0) 1 else (total + pageSize - 1) / pageSize
+        return SalonListResponse(
+            items      = items,
+            total      = total,
+            page       = page,
+            pageSize   = pageSize,
+            totalPages = totalPages,
+        )
     }
 
     fun getSalonById(id: Int): SalonDetail? = SalonRepository.getSalonById(id)
