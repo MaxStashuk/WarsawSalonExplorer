@@ -81,7 +81,7 @@ fun main() {
                     Thread.sleep(2000)
                 }
 
-            } while (pageToken != null && pagesFetched < 3)
+            } while (pageToken != null && pagesFetched < 2)
         }
     }
 
@@ -129,7 +129,10 @@ fun main() {
                     it[Salons.services] = servicesJson
                     it[Salons.priceLevel] = details.price_level
                     it[Salons.updatedAt] = currentTime
-                    // Note: We leave lat/lng null for now as it's a future improvement
+                    it[Salons.rating] = details.rating
+                    it[Salons.reviewsCount] = details.user_ratings_total
+                    it[Salons.lat] = details.geometry?.location?.lat
+                    it[Salons.lng] = details.geometry?.location?.lng
                 }
             } else {
                 Salons.insert {
@@ -142,6 +145,10 @@ fun main() {
                     it[Salons.services] = servicesJson
                     it[Salons.priceLevel] = details.price_level
                     it[Salons.updatedAt] = currentTime
+                    it[Salons.rating] = details.rating
+                    it[Salons.reviewsCount] = details.user_ratings_total
+                    it[Salons.lat] = details.geometry?.location?.lat
+                    it[Salons.lng] = details.geometry?.location?.lng
                 }
             }
             savedCount++

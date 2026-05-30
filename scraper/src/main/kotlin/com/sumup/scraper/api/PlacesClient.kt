@@ -36,7 +36,7 @@ class PlacesClient(private val apiKey: String) {
      * Fetches enriched details for a single place_id.
      */
     fun getPlaceDetails(placeId: String): PlaceDetails? {
-        val fields = "place_id,name,formatted_address,formatted_phone_number,website,price_level,types,address_components"
+        val fields = "place_id,name,formatted_address,formatted_phone_number,website,price_level,types,address_components,rating,user_ratings_total,geometry"
         val url = "https://maps.googleapis.com/maps/api/place/details/json?place_id=$placeId&fields=$fields&key=$apiKey"
 
         val response: PlaceDetailsResponse? = executeRequest(url)

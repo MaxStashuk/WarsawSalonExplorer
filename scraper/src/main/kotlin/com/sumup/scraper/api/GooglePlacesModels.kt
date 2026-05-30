@@ -43,7 +43,10 @@ data class PlaceDetails(
     val website: String? = null,
     val price_level: Int? = null,
     val types: List<String> = emptyList(),
-    val address_components: List<AddressComponent> = emptyList()
+    val address_components: List<AddressComponent> = emptyList(),
+    val rating: Double? = null,
+    val user_ratings_total: Int? = null,
+    val geometry: Geometry? = null
 )
 
 @Serializable
