@@ -8,6 +8,9 @@ scrape:
 backend:
 	gradlew.bat :backend:run
 
+test-backend:
+	gradlew.bat :backend:test
+
 frontend:
 	cd frontend && npm run dev
 
