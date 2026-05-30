@@ -1,7 +1,11 @@
 package com.sumup.scraper
 
-import com.sumup.scraper.api.PlacesClient
-import com.sumup.scraper.db.DatabaseFactory
+import com.sumup.scraper.api.*
+import com.sumup.scraper.db.*
+import org.jetbrains.exposed.sql.*
+import org.jetbrains.exposed.sql.transactions.transaction
+import kotlinx.serialization.encodeToString
+import kotlinx.serialization.json.Json
 
 fun main() {
     println("Starting Warsaw Beauty Salon Scraper...")
@@ -60,8 +64,16 @@ fun main() {
                     println("       Found ${response.results.size} places. Added $added new places")
                 }
 
+                //println(response?.results)
+
                 pageToken = response?.next_page_token;
                 pagesFetched++
+
+                //early exit of the loop if we hit the goal
+                if(uniquePlaceIds.size >= RAW_TARGET) {
+                    println("Target amount of places was scraped.")
+                    break@searchLoop
+                }
 
                 // Added a timeout according to Google Places API. it requires a short delay, before next_page_token becomes valid
                 // Imediate request leads to the INVALID_REQUEST error.
@@ -69,8 +81,72 @@ fun main() {
                     Thread.sleep(2000)
                 }
 
-            } while (pageToken == null && pagesFetched < 3)
+            } while (pageToken != null && pagesFetched < 3)
         }
     }
 
+
+    println("---------------------------------------\nStarting the details fetching")
+    var savedCount = 0
+
+    // Opening database transaction
+    transaction {
+        for((index, placeId) in uniquePlaceIds.withIndex()) {
+            // Standard API call sleep time
+            Thread.sleep(100)
+
+            val details = apiClient.getPlaceDetails(placeId)
+            if(details == null) {
+                System.err.println("Unable to get details of: $placeId")
+                continue
+            }
+
+            val districtComponent = details.address_components.find { it.types.contains("sublocality_level_1") }
+            val district = districtComponent?.long_name ?: "Unknown"
+            val name = details.name
+            val address = details.formatted_address
+
+            if (address == null) {
+                println("   -> Missing address, skipping.")
+                continue
+            }
+
+
+            val servicesJson = Json.encodeToString(details.types)
+            val currentTime = System.currentTimeMillis()
+
+            // SQLite doesn't have a clean native "UPSERT" that plays nicely with Exposed's IntIdTable,
+            // so we do a standard lookup-then-update/insert.
+            val existingSalon = Salons.selectAll().where { Salons.placeId eq placeId }.singleOrNull()
+
+            if (existingSalon != null) {
+                Salons.update({ Salons.placeId eq placeId }) {
+                    it[Salons.name] = name
+                    it[Salons.address] = address
+                    it[Salons.district] = district
+                    it[Salons.phone] = details.formatted_phone_number
+                    it[Salons.website] = details.website
+                    it[Salons.services] = servicesJson
+                    it[Salons.priceLevel] = details.price_level
+                    it[Salons.updatedAt] = currentTime
+                    // Note: We leave lat/lng null for now as it's a future improvement
+                }
+            } else {
+                Salons.insert {
+                    it[Salons.placeId] = placeId
+                    it[Salons.name] = name
+                    it[Salons.address] = address
+                    it[Salons.district] = district
+                    it[Salons.phone] = details.formatted_phone_number
+                    it[Salons.website] = details.website
+                    it[Salons.services] = servicesJson
+                    it[Salons.priceLevel] = details.price_level
+                    it[Salons.updatedAt] = currentTime
+                }
+            }
+            savedCount++
+        }
+    }
+    println("Saved $savedCount places to database.")
+    println("Scrape complete.")
 }
