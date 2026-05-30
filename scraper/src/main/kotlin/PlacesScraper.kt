@@ -37,51 +37,27 @@ fun main() {
     val placeTypes = listOf("beauty_salon", "hair_care")
     val uniquePlaceIds = mutableSetOf<String>()
 
-    // target limit, economy of the tokens
-    val RAW_TARGET = 120
-
-    //nearby search with pagination
-    //searchLoop label for exiting when hit the target
-    searchLoop@ for((index, anchor) in anchors.withIndex()) {
-        val (lattitude, longitude) = anchor
-        println("Searching anchor $index: at ($lattitude, $longitude)")
+    //For each anchor fetch one page per category
+    for ((index, anchor) in anchors.withIndex()) {
+        val (latitude, longitude) = anchor
+        println("Searching anchor ${index + 1}/${anchors.size}: at ($latitude, $longitude)")
 
         for (type in placeTypes) {
-            var pageToken: String? = null
-            var pagesFetched = 0
+            println("   Fetching: $type | page 1")
 
+            // We pass 'null' for the pageToken because we only want the first 20 highest-rated results
+            val response = apiClient.searchNearby(latitude, longitude, 2500, type, null)
 
-            do {
-                println("   Fetching: $type | page ${pagesFetched + 1}")
-                val response = apiClient.searchNearby(lattitude, longitude, 2500, type, pageToken)
-                if(response != null) {
-                    // adding all the IDs of places that are not already in uniquePlacesId (remove duplicates on the edges of anchors with overlapping radiuses)
-                    val initialSize = uniquePlaceIds.size
-                    response.results.forEach {
-                        place -> uniquePlaceIds.add(place.place_id)
-                    }
-                    val added = uniquePlaceIds.size - initialSize;
-                    println("       Found ${response.results.size} places. Added $added new places")
+            if (response != null) {
+                val initialSize = uniquePlaceIds.size
+                response.results.forEach { place ->
+                    uniquePlaceIds.add(place.place_id)
                 }
-
-                //println(response?.results)
-
-                pageToken = response?.next_page_token;
-                pagesFetched++
-
-                //early exit of the loop if we hit the goal
-                if(uniquePlaceIds.size >= RAW_TARGET) {
-                    println("Target amount of places was scraped.")
-                    break@searchLoop
-                }
-
-                // Added a timeout according to Google Places API. it requires a short delay, before next_page_token becomes valid
-                // Imediate request leads to the INVALID_REQUEST error.
-                if(pageToken != null) {
-                    Thread.sleep(2000)
-                }
-
-            } while (pageToken != null && pagesFetched < 2)
+                val added = uniquePlaceIds.size - initialSize
+                println("       Found ${response.results.size} places. Added $added new unique places.")
+            } else {
+                println("       [ERROR] API returned null.")
+            }
         }
     }
 
